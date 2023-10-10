@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.2)
+project(CatestProject)
+set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/../")
+
+add_subdirectory(Framework)
+add_subdirectory(FrameworkTest)
