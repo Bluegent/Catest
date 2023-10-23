@@ -9,7 +9,7 @@
 namespace catest
 {
     //evil voodoo code I copied from StackOverflow
-    //and might try to understand later maybe not
+    //and I now understand (SFINAE and the comma operator)
     template<typename S, typename T>
     class is_streamable
     {

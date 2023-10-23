@@ -4,6 +4,8 @@
 
 namespace catest
 {
+
+
     template <typename T>
     std::string generate_value_fail_string(const T& cond, const char* condName, const T& expected)
     {
@@ -17,7 +19,7 @@ namespace catest
     std::string generate_eq_fail_string(const T& left, const char* leftName, const T2& right, const  char* rightName)
     {
         std::stringstream fail;
-        fail << "Expected " << get_value_and_name(right, rightName) << " but got " << get_value_and_name(left, leftName);
+        fail << "Expected " << get_value_and_name(right, rightName) << " and  " << get_value_and_name(left, leftName) << " to be equal";
         return fail.str();
     }
 
@@ -26,7 +28,25 @@ namespace catest
     std::string generate_neq_fail_string(const T& left, const char* leftName, const T& right, const  char* rightName)
     {
         std::stringstream fail;
-        fail << "Expected different value to " << get_value_and_name(right, rightName) << " but got " << get_value_and_name(left, leftName);
+        fail << "Expected " << get_value_and_name(right, rightName) << " and " << get_value_and_name(left, leftName) << " to be different";
+        return fail.str();
+    }
+
+
+    template <typename T>
+    std::string generate_neq_fail_string(const nullptr_t & left, const char* leftName, const T& right, const  char* rightName)
+    {
+        std::stringstream fail;
+        fail << "Expected " << get_value_and_name(right, rightName) << " and " << get_value_and_name(left, leftName) << " to be different";
+        return fail.str();
+    }
+
+
+    template <typename T>
+    std::string generate_neq_fail_string(const T& left, const char* leftName, const nullptr_t & right, const  char* rightName)
+    {
+        std::stringstream fail;
+        fail << "Expected " << get_value_and_name(right, rightName) << " and " << get_value_and_name(left, leftName) << " to be different";
         return fail.str();
     }
 }

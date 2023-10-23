@@ -37,7 +37,7 @@ namespace catest
             std::cout << '\n';
             size_t passed = suite.second.size() - failed;
 
-            std::cout << "Suite " << suite.first << " results: " << (failed ? "[FAILED]" : "[PASSED]") << '\n';
+            std::cout << "Suite " << suite.first << " results: " << (failed ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m") << '\n';
             std::cout << "Test Passed: " << passed << '/' << suite.second.size() << '\n';
             if (failed)
             {

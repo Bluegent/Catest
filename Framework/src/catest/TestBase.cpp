@@ -2,6 +2,7 @@
 #include <iostream>
 #include <chrono>
 #include <catest/TestRunner.h>
+#include <sstream>
 
 namespace catest
 {
@@ -21,10 +22,23 @@ namespace catest
     {
         std::cout << "\nRunning test " << name << "\n";
         auto before = std::chrono::steady_clock::now();
-        function(*this);
+        try
+        {
+            function(*this);
+        }
+        catch (const std::exception& exception)
+        {
+            std::stringstream ss;
+            ss << "Unhandled exception: " << exception.what();
+            addFailure(FailureReason(ss.str()));
+        }
+        catch (...)
+        {
+            addFailure(FailureReason("Unhandled unknown exception"));
+        }
         auto after = std::chrono::steady_clock::now();
 
-        const char* result = isFailed() ? "[FAILED]" : "[PASSED]";
+        const char* result = isFailed() ? "\033[31m[FAILED]\033[0m" : "\033[32m[PASSED]\033[0m";
         if (isFailed())
         {
 

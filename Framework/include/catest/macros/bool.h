@@ -11,5 +11,7 @@
 #define ASSERT_FALSE(condition) if(condition) { ADD_FAIL_VALUE(condition,false,"ASSERT_FALSE"); return;};
 #define EXPECT_FALSE(condition) if(condition) { ADD_FAIL_VALUE(condition,false,"EXPECT_FALSE");        };
 
+#define FAIL(message) ADD_FAIL(message,"FAIL"); 
+#define STOP(message) ADD_FAIL(message,"STOP"); return
 
 #endif // 
