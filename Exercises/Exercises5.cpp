@@ -1,5 +1,6 @@
 #include <Catest.h>
 #include <iostream>
+#include <sstream>
 
 class Animal
 {

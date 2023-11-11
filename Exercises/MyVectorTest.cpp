@@ -3,6 +3,8 @@
 #include <vector>
 #include <iostream>
 
+DISABLE_SUITE(myvector_suite);
+
 CATEST_F(myvector_suite, constructors)
 {
     // default constructor

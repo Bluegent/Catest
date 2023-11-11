@@ -9,7 +9,7 @@ namespace catest { \
     TestSuiteDisabler##suite(){\
             TestRunner::get_instance().disable_suite(#suite); \
         }\
-    } ##suite_disabler;\
+    } ##suite_disabler_##suite;\
 }\
 
 #endif // !CATEST_RUNNER_MACROS_H

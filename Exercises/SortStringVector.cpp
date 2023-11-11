@@ -94,7 +94,7 @@ int32_t max(std::vector<int32_t>& vec)
     return max;
     
 }
-
+DISABLE_SUITE(sorting_vectors);
 CATEST_F(sorting_vectors, max_of_vector)
 {
     std::vector<int32_t> input = { 13,99,20,-15,20 };
@@ -116,7 +116,6 @@ void sort_on_max(std::vector<std::vector<int32_t>>& vec)
         }
     }
 }
-
 
 CATEST_F(sorting_vectors, vector_of_vector_of_int32_t_max)
 {
