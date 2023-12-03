@@ -5,6 +5,7 @@
 namespace catest
 {
 
+    bool fleq(float a, float b, float epsilon = 0.00001f); 
 
     template <typename T>
     std::string generate_value_fail_string(const T& cond, const char* condName, const T& expected)
