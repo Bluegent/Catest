@@ -1,6 +1,6 @@
 ﻿#include <Catest.h>
 #include "SlotGame.h"
-
+#include <cstdint>
 
 CATEST_F(SlotGame, TestSlotOutput)
 {
