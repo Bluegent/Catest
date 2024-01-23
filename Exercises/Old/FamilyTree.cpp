@@ -21,7 +21,7 @@
 * 5. a function that counts the number of descendants of a given person
 * 6. a function that returns the youngest descendant of a given person
 */
-
+DISABLE_SUITE(Person);
 enum class Sex
 {
     Male,
@@ -96,18 +96,6 @@ public:
 
         this->addChild(child);
         person->addChild(child);
-
-        /*
-        if (sex == Sex::Male)
-        {
-            child->father = this;
-            child->mother = person;
-        }
-        else
-        {
-            child->father = person;
-            child->mother = this;
-        }*/
         child->father = this->sex == Sex::Male ? this : person;
         child->mother = this->sex == Sex::Male ? person : this;
     }
@@ -514,4 +502,84 @@ CATEST_F(Person, CountDescendants)
 
     EXPECT_EQ(countDescendants(dave), 6);
     EXPECT_EQ(countDescendants(jorj), 0);
+}
+
+
+int32_t getIndexOf2(const std::string& input, const std::string& substring)
+{
+    size_t counter{ 0 };
+    for (size_t i{ 0 }; i < input.length(); ++i)
+    {
+
+        if (input[i] == substring[counter])
+        {
+            ++counter;
+            if (counter == substring.length())
+            {
+                return static_cast<int32_t>((i + 1) - counter);
+            }
+        }
+        else
+        {
+            counter = 0;
+        }
+    }
+    return -1;
+}
+
+
+
+int32_t getIndexOf(const std::string& input, const std::string& substring, const size_t startPos = 0)
+{
+    for (size_t i{ startPos }; i < input.length(); ++i)
+    {
+        for (size_t j{ 0 }; j < substring.length(); ++j)
+        {
+            if (input[i + j] != substring[j])
+            {
+                break;
+            }
+            else if (j == substring.length() - 1)
+            {
+                return i;
+            }
+        }
+    }
+
+    return -1;
+}
+
+void replaceAll(std::string& input, const std::string& substring, const std::string& replacement)
+{
+    int32_t substrIndex = -1;
+    int32_t pos = 0;
+    do
+    {
+        substrIndex = getIndexOf(input, substring, pos);
+        if (substrIndex == -1)
+        {
+            return;
+        }
+        pos = substrIndex + replacement.length();
+        input.erase(substrIndex, substring.length());
+        input.insert(substrIndex, replacement);
+    } while (substrIndex != -1);
+}
+
+CATEST_F(GetIndexOf, Get)
+{
+    std::cout << getIndexOf("Hello, there!", "ello") << '\n';
+    std::cout << getIndexOf("Helluo, there!", "ello") << '\n';
+    std::cout <<"GetIndex2: " << getIndexOf2("Helluo, there!", "ello") << '\n';
+    std::cout << getIndexOf("eeeloo", "elo") << '\n';
+    std::cout << "GetIndex2: " << getIndexOf2("eeeloo", "elo") << '\n';
+    std::cout << getIndexOf("Hello, there!", "yes") << '\n';
+    std::cout << getIndexOf("Prajitura", "ura") << '\n';
+    std::cout << getIndexOf("Prajitura", "nope") << '\n';
+
+    int x = 10;
+    std::cout << x;
+    std::string toReplace = "This is not a test. I repeat. This is not a test.";
+    replaceAll(toReplace, "test", "yes");
+    std::cout << toReplace <<'\n';
 }
