@@ -1,12 +1,12 @@
 #include <Catest.h>
 #include <iostream>
-
+#include <memory>
 
 //SOLID
 //Interface, Abstract Class
 //Encapsulation
 //RAII
-//Smart Pointers
+
 
 
 
@@ -203,7 +203,7 @@ CATEST_F(OOP, OOPPlaygroundPolymorphism)
 
     // Polymorphism allows us to store collections of different objects as their base type and treat them the same
     std::vector<const Vehicle*> vehiclesIOwn;
-    
+
     // because vehiclesIOwn is a vector of Vehicle&, we can push anything derived from Vehicle in it, including types that
     // at the time of writing this code do not exist yet!
     vehiclesIOwn.push_back(&ford);
@@ -322,7 +322,7 @@ namespace aggr
 class Pen
 {
 public:
-    void write() 
+    void write()
     {
 
     }
@@ -366,21 +366,21 @@ protected:
     uint32_t age;
 public:
     Billy() // default constructor
-        : age{0}
+        : age{ 0 }
     {
         std::cout << "Billy is alive!\n";
     }
     // A parameter constructor has any amount of parameters
     Billy(const uint32_t age) // parameter constructructor
         // initializer list - a list of the member variables in the order of their declaration as well as what value the initialize them with
-        : age{ age } 
+        : age{ age }
     {
         std::cout << "Billy is alive and " << age << " years old!\n";
     }
 
     //copy constructor
     Billy(const Billy& other) // always takes a const ref of the class as a parameter
-        : age{other.age} //typically copies all the values from the parameter instance to this instance (this is not a rule)
+        : age{ other.age } //typically copies all the values from the parameter instance to this instance (this is not a rule)
     {
         std::cout << "Billy is alive and " << age << " years old and a clone!!!\n";
     }
@@ -399,13 +399,279 @@ CATEST_F(OOP, OOPPlaygroundCosntrDestr)
     } // billy goes out of scope, so we get a call to the destructor
     Billy william(35); // call to parameter constructor
     Billy willClone = william; // call to copy constructor
-}
+} // everything that goes out of scope shall be destructed
 
 
-// Rule of 5 - every time you implemente one of the five following functions, you should write all the others as well:
+// Rule of 5 - every time you implemente one of the five following functions, you should (not: you must) write all the others as well:
 // - default constructor
 // - copy constructor
 // - copy assignment operator
 // - destructor
 // - move constructor
 // - move assignment operator
+
+
+
+//Smart Pointers
+// Shared/Weak/Unique Pointer
+
+
+class Widget
+{
+protected:
+    std::string name;
+    int32_t id;
+public:
+
+    Widget(const std::string& name, const int32_t id)
+        : name{ name }
+        , id{ id }
+    {
+    }
+
+    void doThing()
+    {
+        std::cout << "Name:" << name << " Id: " << id << "\n";
+    }
+};
+
+
+CATEST_F(OOP, OOPPlaygroundSmartPtr)
+{
+
+    // value variables like this are allocated to the stack memory, which is limited to 1MB
+    Widget thing("TestWidget", 10);
+    // stack-bound objects will automatically be deconstructed when going out of scope
+
+    // if our class takes up a lot of memory, let's say ~500 kB, we don't want to occupy half the stack as the whole program uses it
+    // which means we should use the heap
+    // in order to use the heap, we need to use the 'new' operator
+    // the 'new' operator allocates memory for a type and returns a pointer to it
+    // which means in order to store the result, we need a pointer
+    // this is also called dynamic memory allocation
+    // when calling the new operator for a program-defined type, we must also provide constructor parameters (when it is the case)
+    Widget* dynamicWidget = new Widget("DynamicWidget", 20);
+    dynamicWidget->doThing();
+    // dynamic/heap allocated objects DO NOT get automatically deconstructed, so we must explicitly call the delete operator for them
+    // when we no longer need them
+    // the 'delete' operator does 2 things:
+    // calls the destructor of the object
+    // marks the memory as "free", so that it can be used for other things
+
+    // plain pointers are copyable, we can have any number of pointers pointing to the same instance
+    Widget* plainWidgetCopy = dynamicWidget;
+    plainWidgetCopy->doThing();
+
+    // when we delete the oringal instance, though, the copies will now be dangling pointers
+    // which means they point to an already deleted memory zone
+    delete dynamicWidget;
+
+    // plainWidgetCopy->doThing(); // undefined behaivor!
+
+
+    // when using new we always have to manually manage the memory, which means when we no longer need it, we have to explicitly delete it
+    // manually managing memory can lead to accidental memory leaks if we forget to delete what we allocate
+    // to offset what is called a raw/dumb/plain pointer, we have the concept of smart pointers
+    // the C++11 standard template library provides : unique_ptr, shared_ptr and weak_ptr
+
+
+    // these three are available inside the <memory> header
+    {
+        // unique_ptr<T> - denotes that ownership of the instance belongs to one and only entity
+        std::unique_ptr<Widget> uniqueWidget = std::make_unique<Widget>("UniqueWidget", 42); // <- call to constructor, uses 'new' under the hood
+        // in order to make a unique pointer, we must use the function std::make_unique<T>
+        // and pass the parameters we would regularly pass to a constructor call
+        uniqueWidget->doThing();
+
+        // the advantage of unique_ptr is that although it dynamically allocates memory
+        // we don't have to explicitly delte it
+        // once the unique_ptr goes out of scope, the destructor of the object is called
+        // and the memory is freed
+    } // <- because uniqueWidget goes out of scope, it will be deleted here automatically
+
+    //unique_ptr is non-copyable, which means only one pointer to that instance can exist
+    //std::unique_ptr<Widget> copyUniqueWidget = uniqueWidget; // <- not allowed
+    {
+        // shared_ptr<T> - unlike unique_ptr, shared_ptr is copyable which means ownership of the instance is shared between whoever has a reference to it
+        std::shared_ptr<Widget> sharedWidget = std::make_shared<Widget>("SharedWidget", 13); // <- call to constructor, uses 'new' under the hood
+        // in order to make a shared_ptr, we must use std::make_shared<T>       
+        sharedWidget->doThing();
+
+        // shared_ptr internally holds a reference count
+        // when one is created, the reference count starts at 1
+        // when the shared_ptr is copied, the reference count incremented by 1
+        // when a copy of the shared_ptr goes out of scope, the reference count is decremented by 1
+        // when the reference count reaches 0, the shared pointer automatically calls the destructor and frees the memory it holds
+
+        {
+            std::shared_ptr<Widget> sharedWidgetCopy = sharedWidget; //allowed, as shared_ptr is copyable
+            // reference count of sharedWidget goes up to 2
+        } // <- sharedWidgetCopy goes out of scope so reference count goes back to 1
+    } // <- sharedWidget goes out of scope, reference count is now 0 so the Widget instance is deleted
+    // the advantage(and minor disadvantage) of shared_ptr is that as long as someone holds a reference to the instance
+    // the instance will not be deleted!
+    // this means that if holding a shared_ptr, we have the guarantee that it points to a valid memory location (if it was created properly)
+    // but this also leads to the potential circular reference problem
+    // e.g. instance "a" of class A holds a shared_ptr to instance "b" of class B, instance b holds a reference to instance "a" -> neither will ever go out of scope
+    // so neither will be deleted unless one of the references is explicitly dropped
+    // circular references can lead to unexpected memory leaks
+
+
+    // weak_ptr<T> - only holds a weak reference to a shared ptr - this means it does not have ownership
+    // weak_ptr points to something that may or may not be a valid instance
+    // the advantage of weak_ptr is that it does not increase the reference count of a shared ptr
+    // which means that the entity holding a weak ptr does not want to extend the lifetime of the 
+    // resource it points to
+    std::shared_ptr<Widget> shareableWidget = std::make_shared<Widget>("UniqueWidget", 42);
+    std::weak_ptr<Widget> weakWidget = shareableWidget;
+
+    // furthermore, weak_ptr cannot be used in the same way as a plain/raw pointer or a shared/unique ptr
+    // in order to use the resource, we must temporarily convert it to a shared_ptr
+    // weakWidget->doThing(); // <- not allowed
+    {
+        std::shared_ptr<Widget> temporaryWidget = weakWidget.lock(); // <- this operation might return a nullptr if the shared_ptr the weak_ptr refers to has been deallocated
+        // do our stuff with temporaryWidget
+        if (temporaryWidget) // but before we do stuff, we have to check if the pointer is actually valid 
+        {
+            temporaryWidget->doThing();
+        }
+    }
+
+}
+
+
+
+
+class ComplexWidget
+{
+protected:
+    Widget internalWidget; // if ComplexWidget holds a Widget object directly, then each instance of ComplexWidget will also own an instance of Widget
+    // this might be fine, but what if we want to share Widgets between our ComplexWidgets?
+    // every time we would make a copy of ComplexWidget, we would actually make a deep copy of the Widget
+    // then if we modify the original Widget, the copy Widget would not reflect this change -> depending on what we want to do this might be good or not!
+public:
+
+    ComplexWidget(const std::string& widgetName)
+        : internalWidget(widgetName, 0)
+    {
+
+    }
+    void doComplexThing()
+    {
+        internalWidget.doThing();
+    }
+};
+
+// but what if we want to share the instance of the widget?
+// option 1 - hold a reference
+
+
+class ComplexWidgetRef
+{
+protected:
+    Widget& internalWidget; // this means that we won't hold copies of the Widget between instances of ComplexWidgetRef, only copies of the reference itself
+    // this means if we modify one Widget, then this will be reflected across all copies of ComplexWidgetRef
+public:
+    ComplexWidgetRef(const std::string& widgetName)
+        : internalWidget{ Widget(widgetName, 0) } // this won't work because the reference is pointing to an rvalue object that goes out of scope at the end of the constructor!
+    {
+
+    }
+
+    ComplexWidgetRef(Widget& widget) //requires that the memory for widget be managed externally, we don't know if it's on the stack or heap, less control etc.
+        : internalWidget{ widget }
+    {
+
+    }
+
+    ComplexWidgetRef(const ComplexWidgetRef& other) // problem: we need an explicit copy constructor to properly copy the reference
+        : internalWidget{ other.internalWidget }
+    {
+
+    }
+    void doComplexThing()
+    {
+        internalWidget.doThing();
+    }
+};
+
+
+
+//option 2 - plain pointer
+
+class ComplexWidgetPtr
+{
+protected:
+    Widget* internalWidget;// this means that we won't hold copies of the Widget between instances of ComplexWidgetPtr, only copies of the pointer itself
+public:
+    ComplexWidgetPtr(const std::string& widgetName)
+        : internalWidget{ new Widget(widgetName, 0) } // we explicitly dynamically allocated memory for the widget so we must be careful to also delete it
+    {
+
+    }
+
+    ~ComplexWidgetPtr()
+    {
+        delete internalWidget;
+        // if we have a copy of ComplexWidgetPtr, now the internalWidget pointer of that copy is a dangling pointer that points to an invalid memory location!
+        // furthermore, when the original gets destructed, it might attempt to delete the original pointer again -> access violation
+    }
+
+    void doComplexThing()
+    {
+        internalWidget->doThing();
+    }
+};
+
+
+//option 3 - shared_ptr
+
+class ComplexWidgetSharedPtr
+{
+protected:
+    std::shared_ptr<Widget> internalWidget;// this means that we won't hold copies of the Widget between instances of ComplexWidgetPtr, only copies of the shared_ptr itself
+public:
+    ComplexWidgetSharedPtr(const std::string& widgetName)
+        : internalWidget{ std::make_shared<Widget>(widgetName, 0) }
+    {
+
+    }
+
+    ~ComplexWidgetSharedPtr()
+    {
+        // no longer necessary to explicitly delete internalWidget
+        // when all instances of ComplexWidgetSharedPtr that hold a reference to the same Widget object go out of scope, it shall automatically be deleted
+        // in fact, we don't even need the destructor but it was kept for the sake of the comment
+    }
+
+    void doComplexThing()
+    {
+        internalWidget->doThing();
+    }
+};
+
+
+CATEST_F(OOP, OOPPlaygroundSmartPtrComplex)
+{
+    Widget widget("TestRef", 0);
+    ComplexWidgetRef ref(widget);
+    ref.doComplexThing();
+    ComplexWidgetRef copyRef = ref;
+    copyRef.doComplexThing();
+
+    ComplexWidgetPtr ptr("TestPtr");
+    {
+       // ComplexWidgetPtr copyPtr = ptr; // this must be commented, otherwise the test will always fail
+       // copyPtr.doComplexThing();
+    } // copyPtr goes out of scope and deletes the internalWidget
+    ptr.doComplexThing(); // if the above scope is uncommented => undefined behavior as internalWidget is a dangling pointer
+
+    ComplexWidgetSharedPtr shPtr("TestSharedPtr");
+
+    {
+        ComplexWidgetSharedPtr shPtrCopy = shPtr;
+        shPtrCopy.doComplexThing();
+    } // <- shPtrCopy goes out of scope, but internalWidget is not deleted, the reference count just decreases by 1
+
+    shPtr.doComplexThing(); // valid as internalWidget is still a valid instance
+}
