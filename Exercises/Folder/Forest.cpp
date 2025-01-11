@@ -89,8 +89,3 @@ public:
         return age >= Constants::WolfMaturityDuration;
     }
 };
-
-
-CATEST_F(Forest, Playground)
-{
-}

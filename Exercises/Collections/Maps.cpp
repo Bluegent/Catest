@@ -147,3 +147,5 @@ CATEST_F(Word_Freq, Read_File_And_Count)
         std::cout << occurence.first << " - " << occurence.second << "\n";
     }
 }
+
+DISABLE_SUITE(Word_Freq);

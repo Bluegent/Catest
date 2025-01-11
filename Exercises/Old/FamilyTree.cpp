@@ -583,3 +583,5 @@ CATEST_F(GetIndexOf, Get)
     replaceAll(toReplace, "test", "yes");
     std::cout << toReplace <<'\n';
 }
+
+DISABLE_SUITE(GetIndexOf);

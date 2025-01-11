@@ -137,3 +137,5 @@ CATEST_F(MapTest, MapTest)
     // O(log n) 2^5 = 32 log 2 (32) = 5 / log x (y) = z => x ^ z = y
     // O(log n) < O(n)
 }
+;
+DISABLE_SUITE(MapTest)

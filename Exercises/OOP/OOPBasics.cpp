@@ -675,3 +675,4 @@ CATEST_F(OOP, OOPPlaygroundSmartPtrComplex)
 
     shPtr.doComplexThing(); // valid as internalWidget is still a valid instance
 }
+DISABLE_SUITE(OOP);

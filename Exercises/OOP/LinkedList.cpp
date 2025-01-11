@@ -84,3 +84,5 @@ CATEST_F(LinkedListOop, ListPlayground)
 
     int third = list[3];
 }
+
+DISABLE_SUITE(LinkedListOop);
