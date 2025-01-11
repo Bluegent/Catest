@@ -115,6 +115,10 @@ TokenType getType(const std::string& token)
     {
         return TokenType::TimeRange;
     }
+    if (token == "CLSD")
+    {
+        return TokenType::TimeRange;
+    }
 
     return TokenType::Invalid;
 }
@@ -138,6 +142,7 @@ CATEST_F(NOTAM_Test, TEST_GetTokenType)
     const std::string day = "WED";
     const std::string dash = "-";
     const std::string invalid = "no";
+    const std::string closed = "CLSD";
 
     EXPECT_EQ(getType(range), TokenType::TimeRange);
     EXPECT_EQ(getType(day), TokenType::Day);
@@ -150,13 +155,12 @@ CATEST_F(NOTAM_Test, TEST_GetTokenType)
 struct TimeGroup
 {
     std::vector<Day> days;
-    std::string timeRange;
+    std::vector<std::string> ranges;
 };
-
-
 
 using TimeGroups = std::vector<TimeGroup>;
 
+// const std::vector<std::string> tokens = { "MON","WED","0500-1300","FRI","-","SUN","0600-1300"};
 TimeGroups getTimeGroups(const std::vector<std::string>& tokens)
 {
     TokenType lastTokenType = TokenType::Invalid;
@@ -211,7 +215,7 @@ TimeGroups getTimeGroups(const std::vector<std::string>& tokens)
                 }
                 TimeGroup group;
                 group.days = makeDayRange(days[0], days[1]);
-                group.timeRange = tokens[tokenIndex];
+                group.ranges.push_back(tokens[tokenIndex]);
                 groups.push_back(group);
                 // finished processing a <day> dash <day> <timerange> sequence, reset everything
                 days.clear();
@@ -225,7 +229,7 @@ TimeGroups getTimeGroups(const std::vector<std::string>& tokens)
             {
                 TimeGroup group;
                 group.days.push_back(days[0]);
-                group.timeRange = tokens[tokenIndex];
+                group.ranges.push_back(tokens[tokenIndex]);
                 groups.push_back(group);
                 // finished processing a <day> <timerange> sequence, reset everything
                 days.clear();
@@ -253,7 +257,7 @@ TimeGroups getTimeGroups(const std::vector<std::string>& tokens)
                 {
                     TimeGroup group;
                     group.days = days;
-                    group.timeRange = tokens[tokenIndex];
+                    group.ranges.push_back(tokens[tokenIndex]);
                     groups.push_back(group);
                     // finished processing a <day> ...<day> <timerange> sequence, reset everything
                     days.clear();
@@ -275,12 +279,12 @@ TimeGroups getTimeGroups(const std::vector<std::string>& tokens)
         }
         if (lastTokenType == TokenType::Invalid)
         {
-            if (currentTokenType == TokenType::TimeRange)
+            if (currentTokenType != TokenType::Day)
             {
-                //malformed token list, oprhaned <timerange> with no matching previous day or day range
+                //malformed token list, oprhaned token different than <day> found at start of sequence
                 return TimeGroups{};
             }
-            if (currentTokenType == TokenType::Day)
+            else
             {
                 days.push_back(getDay(tokens[tokenIndex]));
             }
@@ -297,68 +301,412 @@ CATEST_F(NOTAM_Test, GetTimeGroups_Simple_TEST)
     TimeGroups result = getTimeGroups(tokens);
     TimeGroup simple;
     simple.days.push_back(Day::Mon);
-    simple.timeRange = "0500-1300";
+    simple.ranges.push_back("0500-1300");
     EXPECT_EQ(simple.days, result[0].days);
-    EXPECT_EQ(simple.timeRange, result[0].timeRange);
+    EXPECT_EQ(simple.ranges, result[0].ranges);
 }
 
 
 CATEST_F(NOTAM_Test, GetTimeGroups_Range_TEST)
 {
-    const std::vector<std::string> tokens = { "MON","-","WED","0500-1300"};
+    const std::vector<std::string> tokens = { "MON","-","WED","0500-1300" };
     TimeGroups result = getTimeGroups(tokens);
     TimeGroup simple;
     simple.days = makeDayRange(Day::Mon, Day::Wed);
-    simple.timeRange = "0500-1300";
+    simple.ranges.push_back("0500-1300");
     EXPECT_EQ(simple.days, result[0].days);
-    EXPECT_EQ(simple.timeRange, result[0].timeRange);
+    EXPECT_EQ(simple.ranges, result[0].ranges);
 }
 
 
 CATEST_F(NOTAM_Test, GetTimeGroups_List_TEST)
 {
-    const std::vector<std::string> tokens = { "MON","TUE","FRI","0500-1300"};
+    const std::vector<std::string> tokens = { "MON","TUE","FRI","0500-1300" };
     TimeGroups result = getTimeGroups(tokens);
     TimeGroup simple;
     simple.days.push_back(Day::Mon);
     simple.days.push_back(Day::Tue);
     simple.days.push_back(Day::Fri);
-    simple.timeRange = "0500-1300";
+    simple.ranges.push_back("0500-1300");
     EXPECT_EQ(simple.days, result[0].days);
-    EXPECT_EQ(simple.timeRange, result[0].timeRange);
+    EXPECT_EQ(simple.ranges, result[0].ranges);
 }
 
 CATEST_F(NOTAM_Test, GetTimeGroups_SimpleTwice_TEST)
 {
-    const std::vector<std::string> tokens = { "MON","0500-1300","WED","0600-1300"};
+    const std::vector<std::string> tokens = { "MON","0500-1300","WED","0600-1300" };
     TimeGroups result = getTimeGroups(tokens);
     TimeGroup simple0;
     simple0.days.push_back(Day::Mon);
-    simple0.timeRange = "0500-1300";
+    simple0.ranges.push_back("0500-1300");
     EXPECT_EQ(simple0.days, result[0].days);
-    EXPECT_EQ(simple0.timeRange, result[0].timeRange);
+    EXPECT_EQ(simple0.ranges, result[0].ranges);
     TimeGroup simple1;
     simple1.days.push_back(Day::Wed);;
-    simple1.timeRange = "0600-1300";
+    simple1.ranges.push_back("0600-1300");
     EXPECT_EQ(simple1.days, result[1].days);
-    EXPECT_EQ(simple1.timeRange, result[1].timeRange);
+    EXPECT_EQ(simple1.ranges, result[1].ranges);
 }
 
 CATEST_F(NOTAM_Test, GetTimeGroups_ListAndRange_TEST)
 {
-    const std::vector<std::string> tokens = { "MON","WED","0500-1300","FRI","-","SUN","0600-1300"};
+    const std::vector<std::string> tokens = { "MON","WED","0500-1300","FRI","-","SUN","0600-1300" };
     TimeGroups result = getTimeGroups(tokens);
     TimeGroup simple;
     simple.days.push_back(Day::Mon);
     simple.days.push_back(Day::Wed);
-    simple.timeRange = "0500-1300";
+    simple.ranges.push_back("0500-1300");
     EXPECT_EQ(simple.days, result[0].days);
-    EXPECT_EQ(simple.timeRange, result[0].timeRange);
+    EXPECT_EQ(simple.ranges, result[0].ranges);
 
 
     TimeGroup simple1;
     simple1.days = makeDayRange(Day::Fri, Day::Sun);
-    simple1.timeRange = "0600-1300";
+    simple1.ranges.push_back("0600-1300");
     EXPECT_EQ(simple1.days, result[1].days);
-    EXPECT_EQ(simple1.timeRange, result[1].timeRange);
+    EXPECT_EQ(simple1.ranges, result[1].ranges);
+}
+
+
+
+class TimeGroupStateMachine
+{
+private:
+    const std::vector<std::string>& tokens;
+    TimeGroups groups;
+    size_t index;
+    std::vector<Day> days;
+    std::vector<std::string> ranges;
+    bool error;
+    bool reset;
+    TokenType current;
+public:
+    TimeGroupStateMachine(const std::vector<std::string>& tokens)
+        : tokens{ tokens }
+        , index{ 0 }
+        , error{ false }
+        , reset{ false }
+        , current{ TokenType::Invalid }
+    {
+        InitialState();
+    }
+    TimeGroups getGroups()
+    {
+        return groups;
+    }
+private:
+
+    void getCurrentTokenType()
+    {
+        current = getType(tokens[index]);
+    }
+
+    void incIndex()
+    {
+        ++index;
+        if (index >= tokens.size())
+        {
+            error = true;
+        }
+    }
+
+    void InitialState()
+    {
+        if (error)
+            return;
+        getCurrentTokenType();
+        if (current == TokenType::Day)
+        {
+            days.push_back(getDay(tokens[index]));
+            HasDayState();
+        }
+        else
+        {
+            //<day> not first in sequence
+            Reject();
+            return;
+        }
+        incIndex();
+        if (error) return;
+        InitialState();
+    }
+    void Reset()
+    {
+        if (error)
+            return;
+        days.clear();
+        ranges.clear();
+
+    }
+    void HasDayState()
+    {
+        if (error) return;
+        incIndex();
+        if (error) return;
+        getCurrentTokenType();
+        if (current == TokenType::Dash)
+        {
+            HasDayDashState();
+            return;
+        }
+        if (current == TokenType::Day)
+        {
+            days.push_back(getDay(tokens[index]));
+            HasDayListState();
+            return;
+        }
+        if (current == TokenType::TimeRange)
+        {
+            ranges.push_back(tokens[index]);
+            HasTimeRangeState();
+            return;
+        }
+    }
+    void HasDayDashState()
+    {
+        if (error) return;
+        incIndex();
+        if (error) return;
+        getCurrentTokenType();
+        if (current == TokenType::Day)
+        {
+            days.push_back(getDay(tokens[index]));
+            HasDayDashDayState();
+            return;
+        }
+        else
+        {
+            // <day> dash should only be followed by <day>
+            Reject();
+            return;
+        }
+    }
+
+    void HasDayDashDayState()
+    {
+        if (error) return;
+        incIndex();
+        if (error) return;
+        getCurrentTokenType();
+        if (current == TokenType::TimeRange)
+        {
+            ranges.push_back(tokens[index]);
+            Day end = days.back();
+            days.pop_back();
+            Day start = days.back();
+            days.pop_back();
+            std::vector<Day> range = makeDayRange(start, end);
+            days.insert(days.end(),range.begin(),range.end());
+            HasTimeRangeState();
+            return;
+        }
+        else if(current == TokenType::Day)
+        {
+            Day end = days.back();
+            days.pop_back();
+            Day start = days.back();
+            days.pop_back();
+            std::vector<Day> range = makeDayRange(start, end);
+            days.insert(days.end(), range.begin(), range.end());
+            days.push_back(getDay(tokens[index]));
+            HasDayState();
+            return;
+        }
+        else
+        {
+            //<day> dash <day> followed by dash
+            Reject();
+        }
+    }
+    void HasTimeRangeState()
+    {
+        if (error) return;
+        incIndex();
+        if (error)
+        {
+            BuildTimeGroup();
+            return;
+        }
+        getCurrentTokenType();
+        if (current == TokenType::TimeRange)
+        {
+            ranges.push_back(tokens[index]);
+            HasTimeRangeState();
+            return;
+        }
+        else
+        {
+            // go back a token and let the initial state process whatever is left
+            --index;
+            BuildTimeGroup();
+        }
+    }
+
+    void HasDayListState()
+    {
+        if (error) return;
+        incIndex();
+        if (error) return;
+        getCurrentTokenType();
+        if (current == TokenType::Day)
+        {
+            days.push_back(getDay(tokens[index]));
+            HasDayListState();
+            return;
+        }
+        if (current == TokenType::TimeRange)
+        {
+            ranges.push_back(tokens[index]);
+            HasTimeRangeState();
+            return;
+        }
+        else if (current == TokenType::Dash)
+        {
+            HasDayDashState();
+            return;
+        }
+    }
+    void Reject()
+    {
+        if (error)
+            return;
+        groups.clear();
+        error = true;
+    }
+
+    void BuildTimeGroup()
+    {
+        TimeGroup group;
+        group.days = days;
+        group.ranges = ranges;
+        groups.push_back(group);
+        Reset();
+    }
+};
+
+
+
+
+CATEST_F(NOTAM_Test, GetTimeGroupsSM_Simple_TEST)
+{
+    const std::vector<std::string> tokens = { "MON","0500-1300" };
+    TimeGroupStateMachine sm(tokens);
+    TimeGroups result = sm.getGroups();
+    TimeGroup simple;
+    simple.days.push_back(Day::Mon);
+    simple.ranges.push_back("0500-1300");
+    EXPECT_EQ(simple.days, result[0].days);
+    EXPECT_EQ(simple.ranges, result[0].ranges);
+}
+
+CATEST_F(NOTAM_Test, GetTimeGroupsSM_Simple_MultiTimeRange_TEST)
+{
+    const std::vector<std::string> tokens = { "MON","0500-1300" ,"1400-1500"};
+    TimeGroupStateMachine sm(tokens);
+    TimeGroups result = sm.getGroups();
+    TimeGroup simple;
+    simple.days.push_back(Day::Mon);
+    simple.ranges.push_back("0500-1300");
+    simple.ranges.push_back("1400-1500");
+    EXPECT_EQ(simple.days, result[0].days);
+    EXPECT_EQ(simple.ranges, result[0].ranges);
+}
+
+
+CATEST_F(NOTAM_Test, GetTimeGroupsSM_Range_TEST)
+{
+    const std::vector<std::string> tokens = { "MON","-","WED","0500-1300" };
+    TimeGroupStateMachine sm(tokens);
+    TimeGroups result = sm.getGroups();
+    TimeGroup simple;
+    simple.days = makeDayRange(Day::Mon, Day::Wed);
+    simple.ranges.push_back("0500-1300");
+    EXPECT_EQ(simple.days, result[0].days);
+    EXPECT_EQ(simple.ranges, result[0].ranges);
+}
+
+
+CATEST_F(NOTAM_Test, GetTimeGroupsSM_List_TEST)
+{
+    const std::vector<std::string> tokens = { "MON","TUE","FRI","0500-1300" };
+    TimeGroupStateMachine sm(tokens);
+    TimeGroups result = sm.getGroups();
+    TimeGroup simple;
+    simple.days.push_back(Day::Mon);
+    simple.days.push_back(Day::Tue);
+    simple.days.push_back(Day::Fri);
+    simple.ranges.push_back("0500-1300");
+    EXPECT_EQ(simple.days, result[0].days);
+    EXPECT_EQ(simple.ranges, result[0].ranges);
+}
+
+CATEST_F(NOTAM_Test, GetTimeGroupsSM_SimpleTwice_TEST)
+{
+    const std::vector<std::string> tokens = { "MON","0500-1300","WED","0600-1300" };
+    TimeGroupStateMachine sm(tokens);
+    TimeGroups result = sm.getGroups();
+    TimeGroup simple0;
+    simple0.days.push_back(Day::Mon);
+    simple0.ranges.push_back("0500-1300");
+    EXPECT_EQ(simple0.days, result[0].days);
+    EXPECT_EQ(simple0.ranges, result[0].ranges);
+    TimeGroup simple1;
+    simple1.days.push_back(Day::Wed);;
+    simple1.ranges.push_back("0600-1300");
+    EXPECT_EQ(simple1.days, result[1].days);
+    EXPECT_EQ(simple1.ranges, result[1].ranges);
+}
+
+CATEST_F(NOTAM_Test, GetTimeGroupsSM_ListAndRange_TEST)
+{
+    const std::vector<std::string> tokens = { "MON","WED","0500-1300","FRI","-","SUN","0600-1300" };
+    TimeGroupStateMachine sm(tokens);
+    TimeGroups result = sm.getGroups();
+    TimeGroup simple;
+    simple.days.push_back(Day::Mon);
+    simple.days.push_back(Day::Wed);
+    simple.ranges.push_back("0500-1300");
+    EXPECT_EQ(simple.days, result[0].days);
+    EXPECT_EQ(simple.ranges, result[0].ranges);
+
+
+    TimeGroup simple1;
+    simple1.days = makeDayRange(Day::Fri, Day::Sun);
+    simple1.ranges.push_back("0600-1300");
+    EXPECT_EQ(simple1.days, result[1].days);
+    EXPECT_EQ(simple1.ranges, result[1].ranges);
+}
+
+
+CATEST_F(NOTAM_Test, GetTimeGroupsSM_Combo_TEST)
+{
+    const std::vector<std::string> tokens = { "MON","WED","-","FRI","SUN","0500-1300"};
+    TimeGroupStateMachine sm(tokens);
+    TimeGroups result = sm.getGroups();
+    TimeGroup simple;
+    simple.days.push_back(Day::Mon);
+    simple.days.push_back(Day::Wed);
+    simple.days.push_back(Day::Thu);
+    simple.days.push_back(Day::Fri);
+    simple.days.push_back(Day::Sun);
+    simple.ranges.push_back("0500-1300");
+    EXPECT_EQ(simple.days, result[0].days);
+    EXPECT_EQ(simple.ranges, result[0].ranges);
+}
+
+CATEST_F(NOTAM_Test, GetTimeGroupsSM_Combo_MultiTime_TEST)
+{
+    const std::vector<std::string> tokens = { "MON","WED","-","FRI","SUN","0500-1300","1500-1600"};
+    TimeGroupStateMachine sm(tokens);
+    TimeGroups result = sm.getGroups();
+    TimeGroup simple;
+    simple.days.push_back(Day::Mon);
+    simple.days.push_back(Day::Wed);
+    simple.days.push_back(Day::Thu);
+    simple.days.push_back(Day::Fri);
+    simple.days.push_back(Day::Sun);
+    simple.ranges.push_back("0500-1300");
+    simple.ranges.push_back("1500-1600");
+    EXPECT_EQ(simple.days, result[0].days);
+    EXPECT_EQ(simple.ranges, result[0].ranges);
 }
