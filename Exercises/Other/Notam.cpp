@@ -378,14 +378,12 @@ private:
     std::vector<Day> days;
     std::vector<std::string> ranges;
     bool error;
-    bool reset;
     TokenType current;
 public:
     TimeGroupStateMachine(const std::vector<std::string>& tokens)
         : tokens{ tokens }
         , index{ 0 }
         , error{ false }
-        , reset{ false }
         , current{ TokenType::Invalid }
     {
         InitialState();
@@ -524,6 +522,7 @@ private:
         incIndex();
         if (error)
         {
+            // reached end of token list with a time range, so we can still build a valid group
             BuildTimeGroup();
             return;
         }
